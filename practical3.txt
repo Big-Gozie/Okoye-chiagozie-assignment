@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define TOTAL_THREADS 8000
+
+int total = 0;
+sem_t accessSemaphore;
+
+void* addOne(void* arg)
+{
+    sem_wait(&accessSemaphore);
+
+    int value = total;
+
+    for (volatile int i = 0; i < 800; i++);
+
+    value++;
+    total = value;
+
+    sem_post(&accessSemaphore);
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t workers[TOTAL_THREADS];
+
+    sem_init(&accessSemaphore, 0, 1);
+
+    for (int i = 0; i < TOTAL_THREADS; i++)
+    {
+        pthread_create(&workers[i], NULL, addOne, NULL);
+    }
+
+    for (int i = 0; i < TOTAL_THREADS; i++)
+    {
+        pthread_join(workers[i], NULL);
+    }
+
+    printf("========== SEMAPHORE DEMONSTRATION ==========\n\n");
+    printf("Expected Total : %d\n", TOTAL_THREADS);
+    printf("Actual Total   : %d\n", total);
+
+    sem_destroy(&accessSemaphore);
+
+    return 0;
+}
